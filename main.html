@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Reservation System</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(-45deg, #4a90e2, #50e3c2, #9013fe, #f5a623);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+  }
+
+  @keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .reservation-box {
+    background: rgba(255,255,255,0.95);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    width: 900px;
+    max-width: 95%;
+    animation: floatBox 1s ease-out;
+    overflow-y: auto;
+    max-height: 90vh;
+  }
+
+  @keyframes floatBox {
+    0% { transform: translateY(-50px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  #calendar {
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:5px;
+    margin-bottom:20px;
+  }
+
+  #calendar div {
+    padding:10px;
+    text-align:center;
+    background:#e1e8f0;
+    border-radius:5px;
+    cursor:pointer;
+    transition: all 0.3s ease;
+  }
+
+  #calendar .header {
+    background:#4a90e2;
+    color:white;
+    cursor:default;
+  }
+
+  #calendar .selected {
+    background:#ffd700;
+    color:#333;
+  }
+
+  .reservation-form {
+    text-align:center;
+    margin-bottom:30px;
+  }
+
+  select, textarea, button {
+    margin:5px;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    outline:none;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  select:focus, textarea:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 10px rgba(74,144,226,0.3);
+  }
+
+  textarea {
+    width:80%;
+    height:60px;
+    resize:none;
+  }
+
+  button {
+    background:#4a90e2;
+    color:white;
+    border:none;
+    cursor:pointer;
+    border-radius:8px;
+  }
+
+  button:hover {
+    background:#357abd;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+  }
+
+  .reservations-list {
+    display:flex;
+    justify-content:space-around;
+    flex-wrap:wrap;
+  }
+
+  .reservations-list div {
+    width:45%;
+  }
+
+  ul {
+    list-style:none;
+    padding:0;
+  }
+
+  li {
+    background:#e1e8f0;
+    margin-bottom:5px;
+    padding:10px;
+    border-radius:5px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition: all 0.3s ease;
+  }
+  
+  li span {
+    word-wrap: break-word;
+    white-space: normal;
+    max-width: 50%;
+  }
+
+  li button {
+    background:red;
+    color:white;
+    padding:5px 10px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+  }
+
+  li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+
+  .reservation-box::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .reservation-box::-webkit-scrollbar-thumb {
+    background: #4a90e2;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="reservation-box">
+  <h1>Lab Reservation Calendar</h1>
+
+  <div style="text-align:right; margin-bottom:10px;">
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <div style="text-align:center; margin-bottom:10px;">
+    <button id="prevMonth">&#8592;</button>
+    <span id="monthYear"></span>
+    <button id="nextMonth">&#8594;</button>
+  </div>
+
+  <div id="calendar"></div>
+
+  <div class="reservation-form">
+    <label>Choose Lab:</label>
+    <select id="labSelect">
+      <option value="Computer Lab">Computer Lab</option>
+      <option value="Science Lab">Science Lab</option>
+    </select>
+    <br>
+    <label>Choose Hour:</label>
+    <select id="hourSelect">
+      <option value="08:00-09:00">08:00-09:00</option>
+      <option value="09:00-10:00">09:00-10:00</option>
+      <option value="10:00-11:00">10:00-11:00</option>
+      <option value="11:00-12:00">11:00-12:00</option>
+      <option value="13:00-14:00">13:00-14:00</option>
+      <option value="14:00-15:00">14:00-15:00</option>
+      <option value="15:00-16:00">15:00-16:00</option>
+    </select>
+    <br>
+    <textarea id="reservationNote" placeholder="Enter reason for reservation..." maxlength="80"></textarea>
+    <br>
+    <button onclick="reserveLab()">Reserve</button>
+  </div>
+
+  <div class="reservations-list">
+    <div>
+      <h3>Computer Lab Reservations</h3>
+      <ul id="computerLabList"></ul>
+    </div>
+    <div>
+      <h3>Science Lab Reservations</h3>
+      <ul id="scienceLabList"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://my-backend.onrender.com"; // 🔴 Your Render URL here
+const logoutBtn = document.getElementById('logoutBtn');
+const calendar = document.getElementById('calendar');
+const monthYear = document.getElementById('monthYear');
+const prevMonthBtn = document.getElementById('prevMonth');
+const nextMonthBtn = document.getElementById('nextMonth');
+const computerLabList = document.getElementById('computerLabList');
+const scienceLabList = document.getElementById('scienceLabList');
+let selectedDate = null;
+const isAdmin = localStorage.getItem('isAdmin') === 'true';
+const daysOfWeek = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let today = new Date();
+let currentMonth = today.getMonth();
+let currentYear = today.getFullYear();
+
+logoutBtn.addEventListener('click', ()=>{
+  localStorage.clear(); 
+  window.location.href = 'index.html'; 
+});
+
+function generateCalendar(month, year){
+  calendar.innerHTML = '';
+  monthYear.textContent = `${monthNames[month]} ${year}`;
+
+  // Day headers
+  daysOfWeek.forEach(d => {
+    const header = document.createElement('div');
+    header.textContent = d;
+    header.classList.add('header');
+    calendar.appendChild(header);
+  });
+
+  const lastDate = new Date(year, month+1,0).getDate();
+
+  for(let date=1; date<=lastDate; date++){
+    const cell = document.createElement('div');
+    cell.textContent = date;
+    cell.addEventListener('click', ()=>selectDate(cell,date));
+
+    // Highlight today
+    const cellDate = new Date(year, month, date);
+    if(cellDate.toDateString() === today.toDateString()){
+      cell.style.border = '2px solid #4a90e2';
+    }
+
+    calendar.appendChild(cell);
+  }
+}
+
+function selectDate(cell,date){
+  document.querySelectorAll('#calendar div').forEach(d => d.classList.remove('selected'));
+  cell.classList.add('selected');
+  selectedDate = new Date(currentYear,currentMonth,date).toISOString().split('T')[0];
+}
+
+prevMonthBtn.addEventListener('click', ()=>{
+  currentMonth--;
+  if(currentMonth<0){ currentMonth=11; currentYear--; }
+  generateCalendar(currentMonth,currentYear);
+});
+
+nextMonthBtn.addEventListener('click', ()=>{
+  currentMonth++;
+  if(currentMonth>11){ currentMonth=0; currentYear++; }
+  generateCalendar(currentMonth,currentYear);
+});
+
+function reserveLab(){
+  const lab = document.getElementById('labSelect').value;
+  const hour = document.getElementById('hourSelect').value;
+  const note = document.getElementById('reservationNote').value.trim();
+
+  if(!selectedDate){ alert('Select a date'); return; }
+  if(!note){ alert('Enter a reason'); return; }
+
+  fetch(`${API_URL}/api/reservations`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({lab,date:selectedDate,hour,note})
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    if(data.status==='success'){
+      alert('Reservation added!');
+      document.getElementById('reservationNote').value='';
+      loadReservations();
+    }else{
+      alert(data.error || 'Failed to reserve');
+    }
+  })
+  .catch(err=>console.error(err));
+}
+
+function removeReservation(lab,date,hour){
+  if(!isAdmin){ alert('Admin only'); return; }
+
+  fetch(`${API_URL}/api/reservations`,{
+    method:'DELETE',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({lab,date,hour})
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    if(data.status==='success') loadReservations();
+    else alert(data.error || 'Failed to remove');
+  })
+  .catch(err=>console.error(err));
+}
+
+function loadReservations(){
+  fetch(`${API_URL}/api/reservations`)
+  .then(res=>res.json())
+  .then(data=>{
+    computerLabList.innerHTML='';
+    scienceLabList.innerHTML='';
+
+    data.forEach(r=>{
+      const li = document.createElement('li');
+      li.innerHTML = `<span><strong>${r.date} - ${r.hour}</strong><br>Reason: ${r.note}</span>`;
+      if(isAdmin) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Remove';
+        btn.onclick = ()=>removeReservation(r.lab,r.date,r.hour);
+        li.appendChild(btn);
+      }
+      if(r.lab==='Computer Lab') computerLabList.appendChild(li);
+      else scienceLabList.appendChild(li);
+    });
+  });
+}
+
+generateCalendar(currentMonth,currentYear);
+loadReservations();
+</script>
+
+</body>
+</html>
